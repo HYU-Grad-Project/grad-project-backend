@@ -15,11 +15,19 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from metrics.views import MetricsView
+from metric.views import MetricView
+# from metric.views import MetricViewSet
+# from rest_framework.routers import DefaultRouter
+
+# router = DefaultRouter()
+# router.register(r'metric', MetricViewSet, basename='metric')
+
+# urlpatterns = [
+#     path('', include(router.urls)),
+# ]
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path('metrics/', include('metrics.urls')),
-    path('metrics/', MetricsView.as_view()),
-
+    # path('metric/', include('metric.urls')),
+    path('metric/', MetricView.as_view()),
 ]
