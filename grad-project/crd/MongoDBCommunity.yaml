@@ -1,0 +1,28 @@
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: mongodb
+  namespace: mongodb
+spec:
+  members: 2
+  prometheus:
+    passwordSecretRef:
+      name: metrics-endpoint-password
+    username: prometheus-username
+  security:
+    authentication:
+      modes:
+      - SCRAM
+  type: ReplicaSet
+  users:
+  - db: admin
+    name: my-user
+    passwordSecretRef:
+      name: my-user-password
+    roles:
+    - db: admin
+      name: clusterAdmin
+    - db: admin
+      name: userAdminAnyDatabase
+    scramCredentialsSecretName: my-scram
+  version: 5.0.6
