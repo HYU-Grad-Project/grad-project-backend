@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: config-alertmanager
+  labels:
+    alertmanagerConfig: grad-proj
+spec:
+  route:
+    groupBy: ['job']
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 30s
+    receiver: 'grad-proj'
+  receivers:
+  - name: 'grad-proj'
+    webhookConfigs:
+    - url: 'http://172.17.0.2:8000/metric/getget/'
+      maxAlerts: 10

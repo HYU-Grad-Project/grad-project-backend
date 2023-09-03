@@ -9,7 +9,6 @@ metadata:
     release: prometheus
 
   name: mongodb-sm
-  namespace: mongodb
 spec:
   endpoints:
 
@@ -35,9 +34,9 @@ spec:
     #    insecureSkipVerify: true
 
   # What namespace to watch
-  namespaceSelector:
-    matchNames:
-    - mongodb
+  # namespaceSelector:
+  #   matchNames:
+  #   - mongodb
 
   # Service labels to match
   selector:

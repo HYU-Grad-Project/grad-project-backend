@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mongodb-alerts
+  labels:
+    release: prometheus # 이게 제일 중요!!!
+spec:
+  groups:
+    - name: mongodb
+      rules:
+        - alert: MongodbDown
+          expr: mongodb_up == 0
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: MongoDB Down (instance {{ $labels.instance }})
+            description: "MongoDB instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        - alert: MongodbTooManyConnections
+          expr: avg by(instance) (rate(mongodb_connections{state="current"}[1m])) / avg by(instance) (sum (mongodb_connections) by (instance)) * 100 > 80
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: MongoDB too many connections (instance {{ $labels.instance }})
+            description: "Too many connections (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

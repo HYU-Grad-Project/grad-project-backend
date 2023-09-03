@@ -13,6 +13,8 @@ import httplib2
 import json
 import yaml
 import os
+import random
+import string
 
 # Create your views here.   
 class MetricViewSet(ModelViewSet):
@@ -47,28 +49,36 @@ class MetricViewSet(ModelViewSet):
 
     @action(methods=['post'], detail=False)
     def getget(self, request):
-        http = httplib2.Http()
-        metric_name = ''
-        try:
-            metric_name = request.data['query']
-        except KeyError:
-            metric_name = ''
-        url = "http://127.0.0.1:9090/api/v1/query?query=" + metric_name
-        response, response_body = http.request(url, method="GET", 
-                                         headers={'Content-Type': 'application/json;'})
-        response_str = response_body.decode('utf-8')
-        response_dict = None
-        error = None
-        try:
-            response_dict = json.loads(response_str)
-        except ValueError:
-            error = '오류가 발생했습니다.'
-        except TypeError:
-            error = '오류가 발생했습니다.'
-        if error is None and response_dict['status'] == 'success' and response_dict['data']['result']:
-            return Response(response_dict)
-        else:
-            return JsonResponse({"error": "해당 query에 대한 결과값을 읽을 수 없습니다."}, status=HTTP_400_BAD_REQUEST)
+        metric = Metric.objects.get(id=1)
+        
+        letters_set = string.ascii_letters
+        metric_desc = ''.join(random.sample(letters_set, 10))
+        metric.description = metric_desc
+        metric.save()
+        
+        return JsonResponse({"msg": metric_desc})
+        # http = httplib2.Http()
+        # metric_name = ''
+        # try:
+        #     metric_name = request.data['query']
+        # except KeyError:
+        #     metric_name = ''
+        # url = "http://127.0.0.1:9090/api/v1/query?query=" + metric_name
+        # response, response_body = http.request(url, method="GET", 
+        #                                  headers={'Content-Type': 'application/json;'})
+        # response_str = response_body.decode('utf-8')
+        # response_dict = None
+        # error = None
+        # try:
+        #     response_dict = json.loads(response_str)
+        # except ValueError:
+        #     error = '오류가 발생했습니다.'
+        # except TypeError:
+        #     error = '오류가 발생했습니다.'
+        # if error is None and response_dict['status'] == 'success' and response_dict['data']['result']:
+        #     return Response(response_dict)
+        # else:
+        #     return JsonResponse({"error": "해당 query에 대한 결과값을 읽을 수 없습니다."}, status=HTTP_400_BAD_REQUEST)
         
     @action(methods=['post'], detail=False)
     def modify_replicaSet(self, request):
@@ -85,6 +95,5 @@ class MetricViewSet(ModelViewSet):
                     v['members'] = replicaSet_num
         with open(crd_file_path, 'w+') as f:
             yaml.dump(crd, f, default_flow_style=False)
-        os.system("kubectl delete -f crd/MongoDBCommunity.yaml")
         os.system("kubectl apply -f crd/MongoDBCommunity.yaml")
         return JsonResponse({"msg": "good"})
