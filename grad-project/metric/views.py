@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from rest_framework.viewsets import ModelViewSet
-from .models import Metric
-from .serializer import MetricSerializer
+from .models import Category, Metric
+from .serializer import CategorySerializer, CategoryListReadSerializer, MetricSerializer, MetricListReadSerializer
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from rest_framework import permissions
@@ -16,14 +16,43 @@ import os
 import random
 import string
 
-# Create your views here.   
+# Create your views here.
+class CategoryViewSet(ModelViewSet):
+    queryset = Category.objects.all()
+    permission_classes = [permissions.AllowAny]
+    
+    serializer_classes = {
+        'list': CategoryListReadSerializer,
+        'read': CategorySerializer,
+    }
+
+    def get_serializer_class(self):
+        if self.serializer_classes:
+            action = self.action
+            serializer_class = self.serializer_classes.get(action)
+
+            if not serializer_class:
+                if action == 'list':
+                    action = 'list_read'
+                if action == 'retrieve':
+                    action = 'read'
+                # if action in ['create', 'update', 'partial_update']:
+                #     action = 'write'
+                serializer_class = self.serializer_classes.get(action, self.serializer_class)
+
+            if not serializer_class:
+                serializer_class = Serializer
+            return serializer_class
+        return super().get_serializer_class()
+
 class MetricViewSet(ModelViewSet):
     queryset = Metric.objects.all()
     permission_classes = [permissions.AllowAny]
     
     serializer_classes = {
-        'list': MetricSerializer,
+        'list': MetricListReadSerializer,
         'read': MetricSerializer,
+        'list_category': MetricListReadSerializer,
         'getget': MetricSerializer,
         'modify_replicaSet': MetricSerializer,
     }
@@ -46,6 +75,17 @@ class MetricViewSet(ModelViewSet):
                 serializer_class = Serializer
             return serializer_class
         return super().get_serializer_class()
+    
+    @action(methods=['get'], detail=False)
+    def list_category(self, request):
+        category_id = int(request.GET.get('category_id', 0))
+        if category_id == 0:
+            metrics = Metric.objects.all()
+        else:
+            metrics = Metric.objects.filter(category_id=category_id)
+        serializer = self.get_serializer(metrics, many=True)
+        return Response(serializer.data)
+            
 
     @action(methods=['post'], detail=False)
     def getget(self, request):

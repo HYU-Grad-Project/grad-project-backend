@@ -15,10 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from metric.views import MetricViewSet
+from metric.views import CategoryViewSet, MetricViewSet
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
+router.register(r'category', CategoryViewSet, basename='category')
 router.register(r'metric', MetricViewSet, basename='metric')
 
 urlpatterns = [
