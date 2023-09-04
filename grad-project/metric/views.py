@@ -13,8 +13,6 @@ import httplib2
 import json
 import yaml
 import os
-import random
-import string
 
 # Create your views here.
 class CategoryViewSet(ModelViewSet):
@@ -127,13 +125,10 @@ class MetricViewSet(ModelViewSet):
     @action(methods=['post'], detail=False)
     def getget(self, request):
         metric = Metric.objects.get(id=1)
-        
-        letters_set = string.ascii_letters
-        metric_desc = ''.join(random.sample(letters_set, 10))
-        metric.description = metric_desc
+        print(request.data)
+        metric.description = str(request.data)
         metric.save()
-        
-        return JsonResponse({"msg": metric_desc})
+        return JsonResponse({"msg": "good"})
         
     @action(methods=['post'], detail=False)
     def modify_replicaSet(self, request):
