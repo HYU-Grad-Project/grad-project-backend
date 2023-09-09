@@ -112,23 +112,15 @@ class MetricViewSet(ModelViewSet):
             for result in result_list:
                 try:
                     pod_name = result['metric']['pod']
+                    origin = result['metric']['instance']
                     value = result['value'][1]
                 except KeyError:
                     return JsonResponse({"error": "오류가 발생했습니다.[2]"}, status=HTTP_400_BAD_REQUEST)
-                pod_value = {"pod_name": pod_name, "value": value}
+                pod_value = {"pod_name": pod_name, "origin": origin, "value": value}
                 pod_value_list.append(pod_value)
             return Response(pod_value_list)
         else:
             return JsonResponse({"error": "오류가 발생했습니다.[3]"}, status=HTTP_400_BAD_REQUEST)
-
-
-    @action(methods=['post'], detail=False)
-    def getget(self, request):
-        metric = Metric.objects.get(id=1)
-        print(request.data)
-        metric.description = str(request.data)
-        metric.save()
-        return JsonResponse({"msg": "good"})
         
     @action(methods=['post'], detail=False)
     def modify_replicaSet(self, request):
