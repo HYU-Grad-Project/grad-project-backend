@@ -8,7 +8,7 @@ spec:
   route:
     groupBy: ['job']
     groupWait: 30s
-    groupInterval: 5m
+    groupInterval: 1m
     repeatInterval: 30s
     receiver: 'grad-proj'
   receivers:

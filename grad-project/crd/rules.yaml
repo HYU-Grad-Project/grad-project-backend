@@ -17,10 +17,18 @@ spec:
             summary: MongoDB Down (instance {{ $labels.instance }})
             description: "MongoDB instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
         - alert: MongodbTooManyConnections
-          expr: avg by(instance) (rate(mongodb_connections{state="current"}[1m])) / avg by(instance) (sum (mongodb_connections) by (instance)) * 100 > 80
-          for: 2m
+          expr: mongodb_connections_current / mongodb_connections_available >= 0.8
+          for: 0m
           labels:
             severity: warning
           annotations:
             summary: MongoDB too many connections (instance {{ $labels.instance }})
-            description: "Too many connections (> 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+            description: "Too many connections (>= 80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        - alert: MongodbAssertsNotZero
+          expr: mongodb_asserts_msg + mongodb_asserts_regular + mongodb_asserts_rollovers + mongodb_asserts_tripwire + mongodb_asserts_warning > 0
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: MongoDB Asserts metric non-zero (instance {{ $labels.instance }})
+            description: "MongoDB Asserts metric non-zero\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

@@ -4,7 +4,9 @@ from django.db import models
 class Rule(models.Model):
     id = models.AutoField(db_column='id', primary_key=True)
     name = models.CharField('이름', db_column='name', max_length=100)
-    expr = models.CharField('표현식', db_column='expr', max_length=3000)
+    query = models.CharField('표현식', db_column='query', max_length=3000)
+    operator = models.CharField('연산자', db_column='operator', max_length=30)
+    threshold = models.IntegerField('임계값', db_column='threshold')
     severity = models.CharField('심각도', db_column='severity', max_length=50)
     description = models.CharField('설명', db_column='description', max_length=3000)
     
@@ -24,6 +26,7 @@ class Alert(models.Model):
     status = models.CharField('상태', db_column='status', max_length=50)
     created_at = models.DateTimeField('생성시간', help_text='생성시간',
                                         db_column='created_at', auto_now_add=True)
+    resolved = models.BooleanField('해결 여부', help_text='해결 여부', db_column='resolved')
     
     class Meta:
         managed = False
