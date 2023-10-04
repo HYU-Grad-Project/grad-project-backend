@@ -11,8 +11,6 @@ from rest_framework.serializers import Serializer
 
 import httplib2
 import json
-import yaml
-import os
 
 # Create your views here.
 class CategoryViewSet(ModelViewSet):
@@ -52,8 +50,6 @@ class MetricViewSet(ModelViewSet):
         'read': MetricSerializer,
         'list_category': MetricListReadSerializer,
         'monitor': MetricSerializer,
-        'getget': MetricSerializer,
-        'modify_replicaSet': MetricSerializer,
     }
 
     def get_serializer_class(self):
@@ -121,21 +117,3 @@ class MetricViewSet(ModelViewSet):
             return Response(pod_value_list)
         else:
             return JsonResponse({"error": "오류가 발생했습니다.[3]"}, status=HTTP_400_BAD_REQUEST)
-        
-    @action(methods=['post'], detail=False)
-    def modify_replicaSet(self, request):
-        try:
-            replicaSet_num = request.data['replicaSet']
-        except KeyError:
-            return JsonResponse({"error": "replicaSet의 갯수를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
-        crd = None
-        crd_file_path = 'C:/Users/User/grad-project-backend/grad-project/crd/MongoDBCommunity.yaml'
-        with open(crd_file_path, 'r+') as f:
-            crd = yaml.load(f, Loader=yaml.FullLoader)
-            for k, v in crd.items():
-                if isinstance(v, dict) and 'type' in v and v['type'] == 'ReplicaSet':
-                    v['members'] = replicaSet_num
-        with open(crd_file_path, 'w+') as f:
-            yaml.dump(crd, f, default_flow_style=False)
-        os.system("kubectl apply -f crd/MongoDBCommunity.yaml")
-        return JsonResponse({"msg": "good"})

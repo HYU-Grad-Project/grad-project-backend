@@ -3,6 +3,9 @@ kind: MongoDBCommunity
 metadata:
   name: mongodb
 spec:
+  additionalMongodConfig:
+    net:
+      maxIncomingConnections: 500
   members: 2
   prometheus:
     passwordSecretRef:
@@ -25,6 +28,3 @@ spec:
       name: userAdminAnyDatabase
     scramCredentialsSecretName: my-scram
   version: 5.0.6
-  additionalMongodConfig:
-    net:
-      maxIncomingConnections: 100

@@ -11,7 +11,8 @@ from rest_framework.decorators import action
 from rest_framework.serializers import Serializer
 
 from django.core.exceptions import ObjectDoesNotExist
-
+import yaml
+import os
 
 # Create your views here.
 class AlertViewSet(ModelViewSet):
@@ -22,6 +23,8 @@ class AlertViewSet(ModelViewSet):
         'list': AlertSerializer,
         'read': AlertSerializer,
         'webhook': AlertSerializer,
+        'follow_up_2': AlertSerializer,
+        'follow_up_3': AlertSerializer,
     }
 
     def get_serializer_class(self):
@@ -85,3 +88,39 @@ class AlertViewSet(ModelViewSet):
             alert.save()
         
         return JsonResponse({"msg": str(len(alert_list)) + " alerts are registered"})
+    
+    @action(methods=['post'], detail=False)
+    def follow_up_2(self, request):
+        try:
+            maxIncomingConnections = request.data['maxIncomingConnections']
+        except KeyError:
+            return JsonResponse({"error": "maxIncomingConnections를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
+        crd = None
+        crd_file_path = 'C:/Users/User/grad-project-backend/grad-project/crd/MongoDBCommunity.yaml'
+        with open(crd_file_path, 'r+') as f:
+            crd = yaml.load(f, Loader=yaml.FullLoader)
+            for k, v in crd.items():
+                if isinstance(v, dict) and 'additionalMongodConfig' in v:
+                    v['additionalMongodConfig']['net']['maxIncomingConnections'] = maxIncomingConnections
+        with open(crd_file_path, 'w+') as f:
+            yaml.dump(crd, f, default_flow_style=False)
+        os.system("kubectl apply -f crd/MongoDBCommunity.yaml")
+        return JsonResponse({"msg": "good"})
+    
+    @action(methods=['post'], detail=False)
+    def follow_up_3(self, request):
+        try:
+            replicaSet_num = request.data['replicaSet']
+        except KeyError:
+            return JsonResponse({"error": "replicaSet의 갯수를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
+        crd = None
+        crd_file_path = 'C:/Users/User/grad-project-backend/grad-project/crd/MongoDBCommunity.yaml'
+        with open(crd_file_path, 'r+') as f:
+            crd = yaml.load(f, Loader=yaml.FullLoader)
+            for k, v in crd.items():
+                if isinstance(v, dict) and 'type' in v and v['type'] == 'ReplicaSet':
+                    v['members'] = replicaSet_num
+        with open(crd_file_path, 'w+') as f:
+            yaml.dump(crd, f, default_flow_style=False)
+        os.system("kubectl apply -f crd/MongoDBCommunity.yaml")
+        return JsonResponse({"msg": "good"})
