@@ -96,7 +96,8 @@ class AlertViewSet(ModelViewSet):
         except KeyError:
             return JsonResponse({"error": "maxIncomingConnections를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
         crd = None
-        crd_file_path = 'C:/Users/User/grad-project-backend/grad-project/crd/MongoDBCommunity.yaml'
+        current_path = os.getcwd()
+        crd_file_path = current_path + '/crd/MongoDBCommunity.yaml'
         with open(crd_file_path, 'r+') as f:
             crd = yaml.load(f, Loader=yaml.FullLoader)
             for k, v in crd.items():
@@ -114,7 +115,8 @@ class AlertViewSet(ModelViewSet):
         except KeyError:
             return JsonResponse({"error": "replicaSet의 갯수를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
         crd = None
-        crd_file_path = 'C:/Users/User/grad-project-backend/grad-project/crd/MongoDBCommunity.yaml'
+        current_path = os.getcwd()
+        crd_file_path = current_path + '/crd/MongoDBCommunity.yaml'
         with open(crd_file_path, 'r+') as f:
             crd = yaml.load(f, Loader=yaml.FullLoader)
             for k, v in crd.items():
