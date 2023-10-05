@@ -5,7 +5,7 @@ metadata:
 spec:
   additionalMongodConfig:
     net:
-      maxIncomingConnections: 500
+      maxIncomingConnections: 100
   members: 2
   prometheus:
     passwordSecretRef:

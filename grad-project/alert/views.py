@@ -84,7 +84,7 @@ class AlertViewSet(ModelViewSet):
                 created_at = alert_json['startsAt']
             except KeyError:
                 return JsonResponse({"error": "Webhook에서 오류가 발생하였습니다.[3]"}, status=HTTP_400_BAD_REQUEST)
-            alert = Alert(rule = rule, pod_name = pod_name, status = status, created_at = created_at)
+            alert = Alert(rule = rule, pod_name = pod_name, status = status, created_at = created_at, resolved = False)
             alert.save()
         
         return JsonResponse({"msg": str(len(alert_list)) + " alerts are registered"})
