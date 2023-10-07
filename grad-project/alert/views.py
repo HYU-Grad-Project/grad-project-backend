@@ -88,15 +88,20 @@ class AlertViewSet(ModelViewSet):
                 return JsonResponse({"error": "Webhook에서 오류가 발생하였습니다.[3]"}, status=HTTP_400_BAD_REQUEST)
             
             if status == 'firing':
-                alert = Alert(rule = rule, fingerprint = fingerprint, pod_name = pod_name, 
-                              status = status, created_at = created_at, resolved = False)
-                alert.save()
+                try:
+                    prev_alert = Alert.objects.get(fingerprint=fingerprint)
+                    prev_alert.count += 1
+                    prev_alert.save()
+                except ObjectDoesNotExist:
+                    alert = Alert(rule = rule, fingerprint = fingerprint, pod_name = pod_name, 
+                                created_at = created_at, resolved = False)
+                    alert.save()
             elif status == 'resolved':
                 try:
                     alert = Alert.objects.get(fingerprint=fingerprint)
                 except ObjectDoesNotExist:
                     return JsonResponse({"error": "등록되지 않은 alert이 존재합니다."})
-                alert.status = status
+                alert.resolved = True
                 alert.resolved_at = resolved_at
                 alert.save()
         return JsonResponse({"msg": str(len(alert_list)) + " alerts are registered(or modified)"})

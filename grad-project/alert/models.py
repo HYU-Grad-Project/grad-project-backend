@@ -24,12 +24,12 @@ class Alert(models.Model):
     rule = models.ForeignKey(Rule, models.DO_NOTHING, help_text = '룰', db_column='rule_id', verbose_name='룰')
     fingerprint = models.CharField('fingerprint', db_column='fingerprint', max_length=100)
     pod_name = models.CharField('pod명', db_column='pod_name', max_length=100)
-    status = models.CharField('상태', db_column='status', max_length=50)
     created_at = models.DateTimeField('생성시간', help_text='생성시간',
-                                        db_column='created_at', auto_now_add=True)
+                                        db_column='created_at')
     resolved_at = models.DateTimeField('해결시간', help_text='해결시간',
-                                        db_column='resolved_at', auto_now_add=True)
+                                        db_column='resolved_at')
     resolved = models.BooleanField('해결 여부', help_text='해결 여부', db_column='resolved')
+    count = models.IntegerField('발생 횟수', db_column='count')
     
     class Meta:
         managed = False
