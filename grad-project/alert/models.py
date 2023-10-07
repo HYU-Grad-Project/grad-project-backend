@@ -22,10 +22,13 @@ class Rule(models.Model):
 class Alert(models.Model):
     id = models.AutoField(db_column='id', primary_key=True)
     rule = models.ForeignKey(Rule, models.DO_NOTHING, help_text = '룰', db_column='rule_id', verbose_name='룰')
+    fingerprint = models.CharField('fingerprint', db_column='fingerprint', max_length=100)
     pod_name = models.CharField('pod명', db_column='pod_name', max_length=100)
     status = models.CharField('상태', db_column='status', max_length=50)
     created_at = models.DateTimeField('생성시간', help_text='생성시간',
                                         db_column='created_at', auto_now_add=True)
+    resolved_at = models.DateTimeField('해결시간', help_text='해결시간',
+                                        db_column='resolved_at', auto_now_add=True)
     resolved = models.BooleanField('해결 여부', help_text='해결 여부', db_column='resolved')
     
     class Meta:

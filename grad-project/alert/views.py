@@ -51,16 +51,16 @@ class AlertViewSet(ModelViewSet):
             resolved = int(request.GET.get('resolved', 0))
         except:
             return JsonResponse({"error": "resolved에 0 또는 1을 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
-        resolve_alerts()
+        # resolve_alerts()
         alerts = Alert.objects.filter(resolved = resolved)
         serializer = self.get_serializer(alerts, many=True)
         return Response(serializer.data)
     
-    def retrieve(self, request, pk=None):
-        resolve_alerts()
-        alert = Alert.objects.get(id=pk)
-        serializer = self.get_serializer(alert)
-        return Response(serializer.data)
+    # def retrieve(self, request, pk=None):
+    #     resolve_alerts()
+    #     alert = Alert.objects.get(id=pk)
+    #     serializer = self.get_serializer(alert)
+    #     return Response(serializer.data)
 
     @action(methods=['post'], detail=False)
     def webhook(self, request):
@@ -82,12 +82,23 @@ class AlertViewSet(ModelViewSet):
             try:
                 status = alert_json['status']
                 created_at = alert_json['startsAt']
+                resolved_at = alert_json['endsAt']
+                fingerprint = alert_json['fingerprint']
             except KeyError:
                 return JsonResponse({"error": "Webhook에서 오류가 발생하였습니다.[3]"}, status=HTTP_400_BAD_REQUEST)
-            alert = Alert(rule = rule, pod_name = pod_name, status = status, created_at = created_at, resolved = False)
-            alert.save()
-        
-        return JsonResponse({"msg": str(len(alert_list)) + " alerts are registered"})
+            
+            if status == 'firing':
+                alert = Alert(rule = rule, pod_name = pod_name, status = status, created_at = created_at, resolved = False)
+                alert.save()
+            elif status == 'resolved':
+                try:
+                    alert = Alert.objects.get(fingerprint=fingerprint)
+                except ObjectDoesNotExist:
+                    return JsonResponse({"error": "등록되지 않은 alert이 존재합니다."})
+                alert.status = status
+                alert.resolved_at = resolved_at
+                alert.save()
+        return JsonResponse({"msg": str(len(alert_list)) + " alerts are registered(or modified)"})
     
     @action(methods=['post'], detail=False)
     def follow_up_2(self, request):
