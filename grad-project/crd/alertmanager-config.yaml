@@ -15,4 +15,3 @@ spec:
   - name: 'grad-proj'
     webhookConfigs:
     - url: 'http://172.17.0.2:8000/alert/webhook/'
-      maxAlerts: 10

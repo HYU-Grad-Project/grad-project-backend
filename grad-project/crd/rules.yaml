@@ -17,7 +17,7 @@ spec:
             summary: MongoDB Down (instance {{ $labels.instance }})
             description: "MongoDB instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
         - alert: MongodbTooManyConnections
-          expr: mongodb_connections_current / mongodb_connections_available >= 0.2
+          expr: mongodb_connections_current / mongodb_connections_available >= 0.8
           for: 0m
           labels:
             severity: warning
