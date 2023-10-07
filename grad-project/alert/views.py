@@ -88,7 +88,8 @@ class AlertViewSet(ModelViewSet):
                 return JsonResponse({"error": "Webhook에서 오류가 발생하였습니다.[3]"}, status=HTTP_400_BAD_REQUEST)
             
             if status == 'firing':
-                alert = Alert(rule = rule, pod_name = pod_name, status = status, created_at = created_at, resolved = False)
+                alert = Alert(rule = rule, fingerprint = fingerprint, pod_name = pod_name, 
+                              status = status, created_at = created_at, resolved = False)
                 alert.save()
             elif status == 'resolved':
                 try:
