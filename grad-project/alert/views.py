@@ -94,7 +94,7 @@ class AlertViewSet(ModelViewSet):
                     prev_alert.save()
                 except ObjectDoesNotExist:
                     alert = Alert(rule = rule, fingerprint = fingerprint, pod_name = pod_name, 
-                                created_at = created_at, resolved = False)
+                                created_at = created_at, resolved = False, count = 1)
                     alert.save()
             elif status == 'resolved':
                 try:
