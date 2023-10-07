@@ -106,7 +106,7 @@ class AlertViewSet(ModelViewSet):
         with open(crd_file_path, 'w+') as f:
             yaml.dump(crd, f, default_flow_style=False)
         os.system("kubectl apply -f crd/MongoDBCommunity.yaml")
-        return JsonResponse({"msg": "good"})
+        return JsonResponse({"msg": "MongodbTooManyConnections에 대한 후속 조치가 완료되었습니다."})
     
     @action(methods=['post'], detail=False)
     def follow_up_3(self, request):
@@ -125,4 +125,4 @@ class AlertViewSet(ModelViewSet):
         with open(crd_file_path, 'w+') as f:
             yaml.dump(crd, f, default_flow_style=False)
         os.system("kubectl apply -f crd/MongoDBCommunity.yaml")
-        return JsonResponse({"msg": "good"})
+        return JsonResponse({"msg": "MongodbAssertsNotZero에 대한 후속 조치가 완료되었습니다."})
