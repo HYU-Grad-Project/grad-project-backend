@@ -9,3 +9,8 @@ class AlertSerializer(serializers.ModelSerializer):
         
     def get_rule_name(self, instance):
         return instance.rule.name
+    
+class RuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rule
+        fields = ['id', 'name', 'query', 'operator', 'threshold', 'severity', 'description']

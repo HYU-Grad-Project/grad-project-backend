@@ -16,13 +16,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from metric.views import CategoryViewSet, MetricViewSet
-from alert.views import AlertViewSet
+from alert.views import AlertViewSet, RuleViewSet
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 router.register(r'category', CategoryViewSet, basename='category')
 router.register(r'metric', MetricViewSet, basename='metric')
 router.register(r'alert', AlertViewSet, basename='alert')
+router.register(r'rule', RuleViewSet, basename='rule')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

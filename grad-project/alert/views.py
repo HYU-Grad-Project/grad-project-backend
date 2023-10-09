@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from rest_framework.viewsets import ModelViewSet
 from .models import Rule, Alert
-from .serializer import AlertSerializer
+from .serializer import AlertSerializer, RuleSerializer
 from .functions import resolve_alerts
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
@@ -143,3 +143,31 @@ class AlertViewSet(ModelViewSet):
             yaml.dump(crd, f, default_flow_style=False)
         os.system("kubectl apply -f crd/MongoDBCommunity.yaml")
         return JsonResponse({"msg": "MongodbAssertsNotZero에 대한 후속 조치가 완료되었습니다."})
+    
+class RuleViewSet(ModelViewSet):
+    queryset = Rule.objects.all()
+    permission_classes = [permissions.AllowAny]
+    
+    serializer_classes = {
+        'list': RuleSerializer,
+        'read': RuleSerializer,
+    }
+
+    def get_serializer_class(self):
+        if self.serializer_classes:
+            action = self.action
+            serializer_class = self.serializer_classes.get(action)
+
+            if not serializer_class:
+                if action == 'list':
+                    action = 'list_read'
+                if action == 'retrieve':
+                    action = 'read'
+                # if action in ['create', 'update', 'partial_update']:
+                #     action = 'write'
+                serializer_class = self.serializer_classes.get(action, self.serializer_class)
+
+            if not serializer_class:
+                serializer_class = Serializer
+            return serializer_class
+        return super().get_serializer_class()
