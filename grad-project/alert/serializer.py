@@ -11,6 +11,10 @@ class AlertSerializer(serializers.ModelSerializer):
         return instance.rule.name
     
 class RuleSerializer(serializers.ModelSerializer):
+    count = serializers.SerializerMethodField(help_text='알럿 개수')
     class Meta:
         model = Rule
-        fields = ['id', 'name', 'query', 'operator', 'threshold', 'severity', 'description']
+        fields = ['id', 'name', 'query', 'operator', 'threshold', 'severity', 'description', 'count']
+        
+    def get_count(self, instance):
+        return Alert.objects.filter(rule__id = instance.id).count()

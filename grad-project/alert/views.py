@@ -51,8 +51,17 @@ class AlertViewSet(ModelViewSet):
             resolved = int(request.GET.get('resolved', 0))
         except:
             return JsonResponse({"error": "resolved에 0 또는 1을 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
+        try:
+            rule_id = int(request.GET.get('rule_id', 0))
+        except:
+            return JsonResponse({"error": "rule_id를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
+        
         # resolve_alerts()
-        alerts = Alert.objects.filter(resolved = resolved)
+        
+        if rule_id == 0:
+            alerts = Alert.objects.filter(resolved = resolved)
+        else:
+            alerts = Alert.objects.filter(resolved = resolved, rule__id = rule_id)
         serializer = self.get_serializer(alerts, many=True)
         return Response(serializer.data)
     
