@@ -13,6 +13,8 @@ from rest_framework.serializers import Serializer
 from django.core.exceptions import ObjectDoesNotExist
 import yaml
 import os
+import httplib2
+import json
 
 # Create your views here.
 class AlertViewSet(ModelViewSet):
@@ -23,8 +25,8 @@ class AlertViewSet(ModelViewSet):
         'list': AlertSerializer,
         'read': AlertSerializer,
         'webhook': AlertSerializer,
-        'follow_up_2': AlertSerializer,
-        'follow_up_3': AlertSerializer,
+        'advice': AlertSerializer,
+        'follow_up': AlertSerializer,
     }
 
     def get_serializer_class(self):
@@ -56,7 +58,7 @@ class AlertViewSet(ModelViewSet):
         except:
             return JsonResponse({"error": "rule_id를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
         
-        # resolve_alerts()
+        resolve_alerts()
         
         if rule_id == 0:
             alerts = Alert.objects.filter(resolved = resolved)
@@ -65,11 +67,11 @@ class AlertViewSet(ModelViewSet):
         serializer = self.get_serializer(alerts, many=True)
         return Response(serializer.data)
     
-    # def retrieve(self, request, pk=None):
-    #     resolve_alerts()
-    #     alert = Alert.objects.get(id=pk)
-    #     serializer = self.get_serializer(alert)
-    #     return Response(serializer.data)
+    def retrieve(self, request, pk=None):
+        resolve_alerts()
+        alert = Alert.objects.get(id=pk)
+        serializer = self.get_serializer(alert)
+        return Response(serializer.data)
 
     @action(methods=['post'], detail=False)
     def webhook(self, request):
@@ -116,42 +118,113 @@ class AlertViewSet(ModelViewSet):
         return JsonResponse({"msg": str(len(alert_list)) + " alerts are registered(or modified)"})
     
     @action(methods=['post'], detail=False)
-    def follow_up_2(self, request):
+    def advice(self, request):
         try:
-            maxIncomingConnections = request.data['maxIncomingConnections']
+            alert_id = request.data['alert_id']
         except KeyError:
-            return JsonResponse({"error": "maxIncomingConnections를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
-        crd = None
-        current_path = os.getcwd()
-        crd_file_path = current_path + '/crd/MongoDBCommunity.yaml'
-        with open(crd_file_path, 'r+') as f:
-            crd = yaml.load(f, Loader=yaml.FullLoader)
-            for k, v in crd.items():
-                if isinstance(v, dict) and 'additionalMongodConfig' in v:
-                    v['additionalMongodConfig']['net']['maxIncomingConnections'] = maxIncomingConnections
-        with open(crd_file_path, 'w+') as f:
-            yaml.dump(crd, f, default_flow_style=False)
-        os.system("kubectl apply -f crd/MongoDBCommunity.yaml")
-        return JsonResponse({"msg": "MongodbTooManyConnections에 대한 후속 조치가 완료되었습니다."})
+            return JsonResponse({"error": "rule_id를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
+        alert = Alert.objects.get(id=alert_id)
+        rule = alert.rule
+        pod_name = alert.pod_name
+        threshold = rule.threshold
+        
+        relevant_key_name = rule.relevant_key_name
+        current_value = 0
+        recommended_value = 0
+        mongodb_connections_current = 0
+        
+        if rule.id == 2:
+            crd = None
+            current_path = os.getcwd()
+            crd_file_path = current_path + '/crd/MongoDBCommunity.yaml'
+            with open(crd_file_path, 'r+') as f:
+                crd = yaml.load(f, Loader=yaml.FullLoader)
+                for k, v in crd.items():
+                    if isinstance(v, dict) and 'additionalMongodConfig' in v:
+                        current_value = int(v['additionalMongodConfig']['net']['maxIncomingConnections'])
+
+            http = httplib2.Http()
+            prometheus_ip = "http://127.0.0.1"
+            url = prometheus_ip + ":9090/api/v1/query?query=" + "mongodb_connections_current"
+            response, response_body = http.request(url, method="GET", 
+                                            headers={'Content-Type': 'application/json;'})
+            response_str = response_body.decode('utf-8')
+            response_dict = None
+            error = None
+            try:
+                response_dict = json.loads(response_str)
+            except ValueError:
+                return JsonResponse({"error": "Advice 생성 중 오류가 발생했습니다.[0]"}, status=HTTP_400_BAD_REQUEST)
+            except TypeError:
+                return JsonResponse({"error": "Advice 생성 중 오류가 발생했습니다.[1]"}, status=HTTP_400_BAD_REQUEST)
+            if error is None and response_dict['status'] == 'success' and response_dict['data']['result']:
+                result_list = response_dict['data']['result']
+                pod_found = False
+                for result in result_list:
+                    if result['metric']['pod'] == pod_name:
+                        pod_found = True
+                        mongodb_connections_current = int(result['value'][1])
+                if not pod_found:
+                    return JsonResponse({"error": "Advice 생성 중 오류가 발생했습니다.[2]"}, status=HTTP_400_BAD_REQUEST)
+            
+            # mongodb_connections_current 값을 기준으로 Rule의 threshold보다 5 % 적은 값을 갖도록 recommended_value 설정
+            recommended_value = int(mongodb_connections_current * 100 / (threshold - 5))
+        
+        if rule.id == 1 or rule.id == 3:
+            crd = None
+            current_path = os.getcwd()
+            crd_file_path = current_path + '/crd/MongoDBCommunity.yaml'
+            with open(crd_file_path, 'r+') as f:
+                crd = yaml.load(f, Loader=yaml.FullLoader)
+                for k, v in crd.items():
+                    if isinstance(v, dict) and 'type' in v and v['type'] == 'ReplicaSet':
+                        current_value = int(v['members'])
+            
+            recommended_value = current_value + 1
+        
+        response_dict = {}
+        response_dict['relevant_key_name'] = relevant_key_name
+        response_dict['current_value'] = current_value
+        response_dict['recommended_value'] = recommended_value
+        return JsonResponse(response_dict)
     
     @action(methods=['post'], detail=False)
-    def follow_up_3(self, request):
+    def follow_up(self, request):
         try:
-            replicaSet_num = request.data['replicaSet']
+            alert_id = request.data['alert_id']
         except KeyError:
-            return JsonResponse({"error": "replicaSet의 갯수를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
+            return JsonResponse({"error": "alert_id를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
+        try:
+            value = request.data['value']
+        except KeyError:
+            return JsonResponse({"error": "value를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
+        
+        rule = Alert.objects.get(id=alert_id).rule
         crd = None
         current_path = os.getcwd()
         crd_file_path = current_path + '/crd/MongoDBCommunity.yaml'
-        with open(crd_file_path, 'r+') as f:
-            crd = yaml.load(f, Loader=yaml.FullLoader)
-            for k, v in crd.items():
-                if isinstance(v, dict) and 'type' in v and v['type'] == 'ReplicaSet':
-                    v['members'] = replicaSet_num
-        with open(crd_file_path, 'w+') as f:
-            yaml.dump(crd, f, default_flow_style=False)
+        
+        if rule.id == 2:
+            with open(crd_file_path, 'r+') as f:
+                crd = yaml.load(f, Loader=yaml.FullLoader)
+                for k, v in crd.items():
+                    if isinstance(v, dict) and 'additionalMongodConfig' in v:
+                        v['additionalMongodConfig']['net']['maxIncomingConnections'] = value
+            with open(crd_file_path, 'w+') as f:
+                yaml.dump(crd, f, default_flow_style=False)
+        
+        elif rule.id == 1 or rule.id == 3:
+            with open(crd_file_path, 'r+') as f:
+                crd = yaml.load(f, Loader=yaml.FullLoader)
+                for k, v in crd.items():
+                    if isinstance(v, dict) and 'type' in v and v['type'] == 'ReplicaSet':
+                        v['members'] = value
+            with open(crd_file_path, 'w+') as f:
+                yaml.dump(crd, f, default_flow_style=False)
+        
         os.system("kubectl apply -f crd/MongoDBCommunity.yaml")
-        return JsonResponse({"msg": "MongodbAssertsNotZero에 대한 후속 조치가 완료되었습니다."})
+        
+        return JsonResponse({"msg": rule.name + "에 대한 후속 조치가 완료되었습니다."})
     
 class RuleViewSet(ModelViewSet):
     queryset = Rule.objects.all()

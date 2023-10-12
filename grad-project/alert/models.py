@@ -9,6 +9,7 @@ class Rule(models.Model):
     threshold = models.IntegerField('임계값', db_column='threshold')
     severity = models.CharField('심각도', db_column='severity', max_length=50)
     description = models.CharField('설명', db_column='description', max_length=3000)
+    relevant_key_name = models.CharField('CRD key 값', db_column='relevant_key_name', max_length=100)
     
     class Meta:
         managed = False

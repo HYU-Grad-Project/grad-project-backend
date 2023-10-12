@@ -6,8 +6,9 @@ from .models import Alert
 import httplib2
 import json
 
+# 호출 횟수가 10회 이상인 Unresolved Alerts에 대한 확인
 def resolve_alerts():
-    alerts = Alert.objects.filter(resolved=False)
+    alerts = Alert.objects.filter(resolved=False, count__gte = 10)
     for alert in alerts:
         rule = alert.rule
         pod_name = alert.pod_name
