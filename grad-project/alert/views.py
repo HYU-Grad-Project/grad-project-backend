@@ -141,7 +141,7 @@ class AlertViewSet(ModelViewSet):
                 crd = yaml.load(f, Loader=yaml.FullLoader)
                 for k, v in crd.items():
                     if isinstance(v, dict) and 'additionalMongodConfig' in v:
-                        current_value = int(v['additionalMongodConfig']['net']['maxIncomingConnections'])
+                        current_value = int(float(v['additionalMongodConfig']['net']['maxIncomingConnections']))
 
             http = httplib2.Http()
             prometheus_ip = "http://127.0.0.1"
@@ -163,7 +163,7 @@ class AlertViewSet(ModelViewSet):
                 for result in result_list:
                     if result['metric']['pod'] == pod_name:
                         pod_found = True
-                        mongodb_connections_current = int(result['value'][1])
+                        mongodb_connections_current = int(float(result['value'][1]))
                 if not pod_found:
                     return JsonResponse({"error": "Advice 생성 중 오류가 발생했습니다.[2]"}, status=HTTP_400_BAD_REQUEST)
             
