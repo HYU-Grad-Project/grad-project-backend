@@ -9,7 +9,7 @@ import os
 
 # 호출 횟수가 10회 이상인 Unresolved Alerts에 대한 확인
 def resolve_alerts():
-    alerts = Alert.objects.filter(resolved=False, count__gte = 10)
+    alerts = Alert.objects.filter(resolved=False)
     for alert in alerts:
         rule = alert.rule
         pod_name = alert.pod_name
