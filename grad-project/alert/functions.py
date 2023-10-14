@@ -6,8 +6,8 @@ from .models import Alert
 import httplib2
 import json
 import os
+from datetime import datetime
 
-# 호출 횟수가 10회 이상인 Unresolved Alerts에 대한 확인
 def resolve_alerts():
     alerts = Alert.objects.filter(resolved=False)
     for alert in alerts:
@@ -45,24 +45,30 @@ def resolve_alerts():
         if operator == 'EQUAL':
             if query_result != threshold:
                 alert.resolved = True
+                alert.resolved_at = datetime.now()
                 alert.save()
         elif operator == 'NOT_EQUAL':
             if query_result == threshold:
                 alert.resolved = True
+                alert.resolved_at = datetime.now()
                 alert.save()
         elif operator == 'GREATER':
             if query_result <= threshold:
                 alert.resolved = True
+                alert.resolved_at = datetime.now()
                 alert.save()
         elif operator == 'GREATER_EQUAL':
             if query_result < threshold:
                 alert.resolved = True
+                alert.resolved_at = datetime.now()
                 alert.save()
         elif operator == 'LESS':
             if query_result >= threshold:
                 alert.resolved = True
+                alert.resolved_at = datetime.now()
                 alert.save()
         elif operator == 'LESS_EQUAL':
             if query_result > threshold:
                 alert.resolved = True
+                alert.resolved_at = datetime.now()
                 alert.save()
