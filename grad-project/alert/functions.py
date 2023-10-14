@@ -18,7 +18,7 @@ def resolve_alerts():
         threshold = rule.threshold
         
         http = httplib2.Http()
-        prometheus_ip = "http://127.0.0.1"
+        prometheus_ip = os.environ.get("PROMETHEUS_IP", 'http://127.0.0.1')
         url = prometheus_ip + ":9090/api/v1/query?query=" + query
         response, response_body = http.request(url, method="GET", 
                                          headers={'Content-Type': 'application/json;'})

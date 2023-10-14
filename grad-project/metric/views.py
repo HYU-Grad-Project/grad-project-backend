@@ -11,6 +11,7 @@ from rest_framework.serializers import Serializer
 
 import httplib2
 import json
+import os
 
 # Create your views here.
 class CategoryViewSet(ModelViewSet):
@@ -89,7 +90,7 @@ class MetricViewSet(ModelViewSet):
         metric_name = metric.name if metric is not None else ''
         
         # Cluster 내의 prometheus pod의 ip 주소를 입력해야함
-        prometheus_ip = "http://127.0.0.1"
+        prometheus_ip = os.environ.get("PROMETHEUS_IP", 'http://127.0.0.1')
         url = prometheus_ip + ":9090/api/v1/query?query=" + metric_name
         response, response_body = http.request(url, method="GET", 
                                          headers={'Content-Type': 'application/json;'})

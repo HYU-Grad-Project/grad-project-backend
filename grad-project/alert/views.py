@@ -144,7 +144,7 @@ class AlertViewSet(ModelViewSet):
                         current_value = int(float(v['additionalMongodConfig']['net']['maxIncomingConnections']))
 
             http = httplib2.Http()
-            prometheus_ip = "http://127.0.0.1"
+            prometheus_ip = os.environ.get("PROMETHEUS_IP", 'http://127.0.0.1')
             url = prometheus_ip + ":9090/api/v1/query?query=" + "mongodb_connections_current"
             response, response_body = http.request(url, method="GET", 
                                             headers={'Content-Type': 'application/json;'})
@@ -178,7 +178,7 @@ class AlertViewSet(ModelViewSet):
                 crd = yaml.load(f, Loader=yaml.FullLoader)
                 for k, v in crd.items():
                     if isinstance(v, dict) and 'type' in v and v['type'] == 'ReplicaSet':
-                        current_value = int(v['members'])
+                        current_value = int(float(v['members']))
             
             recommended_value = current_value + 1
         
