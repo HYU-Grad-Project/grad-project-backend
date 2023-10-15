@@ -19,9 +19,10 @@ class RuleMetricSerializer(serializers.ModelSerializer):
 class RuleSerializer(serializers.ModelSerializer):
     count = serializers.SerializerMethodField(help_text='알럿 개수')
     metrics = serializers.SerializerMethodField(help_text='메트릭')
+    expr = serializers.SerializerMethodField(help_text='표현식')
     class Meta:
         model = Rule
-        fields = ['id', 'name', 'query', 'operator', 'threshold', 'severity', 'description', 'count', 'relevant_key_name', 'metrics']
+        fields = ['id', 'name', 'expr', 'severity', 'description', 'count', 'relevant_key_name', 'metrics']
         
     def get_count(self, instance):
         return Alert.objects.filter(rule__id = instance.id).count()
@@ -29,6 +30,16 @@ class RuleSerializer(serializers.ModelSerializer):
     def get_metrics(self, instance):
         rule_metric_instances = RuleMetric.objects.filter(rule__id = instance.id)
         return RuleMetricSerializer(rule_metric_instances, many = True).data
+    
+    def get_expr(self, instance):
+        operator = {}
+        operator['EQUAL'] = '='
+        operator['NOT_EQUAL'] = '!='
+        operator['GREATER'] = '>'
+        operator['GREATER_EQUAL'] = '>='
+        operator['LESS'] = '<'
+        operator['LESS_EQUAL'] = '<='
+        return instance.query + ' ' + operator[instance.operator] + ' ' + str(instance.threshold)
     
 class AlertSerializer(serializers.ModelSerializer):
     rule = RuleSerializer(many = False)
