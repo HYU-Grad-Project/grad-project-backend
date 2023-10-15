@@ -6,6 +6,10 @@ spec:
   additionalMongodConfig:
     net:
       maxIncomingConnections: 100
+    storage:
+      wiredTiger:
+        engineConfig:
+          cacheSizeGB: 0.25
   members: 2
   prometheus:
     passwordSecretRef:

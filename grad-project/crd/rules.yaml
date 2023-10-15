@@ -17,7 +17,7 @@ spec:
             summary: MongoDB Down (instance {{ $labels.instance }})
             description: "MongoDB instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
         - alert: MongodbTooManyConnections
-          expr: mongodb_connections_current / mongodb_connections_available >= 0.8
+          expr: (mongodb_connections_current / mongodb_connections_available) * 100 >= 80
           for: 0m
           labels:
             severity: warning
@@ -32,3 +32,11 @@ spec:
           annotations:
             summary: MongoDB Asserts metric non-zero (instance {{ $labels.instance }})
             description: "MongoDB Asserts metric non-zero\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+        - alert: MongodbTooMuchCache
+          expr: (mongodb_wiredTiger_cache_bytes_currently_in_the_cache / mongodb_wiredTiger_cache_maximum_bytes_configured) * 100 >= 0.7
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: MongoDB too much cache (instance {{ $labels.instance }})
+            description: "Too much cache (>= 0.7%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
