@@ -13,7 +13,7 @@ def resolve_alerts():
     for alert in alerts:
         rule = alert.rule
         pod_name = alert.pod_name
-        query = rule.query
+        query = rule.query.replace("+", "%2B")
         query_result = 0
         operator = rule.operator
         threshold = rule.threshold

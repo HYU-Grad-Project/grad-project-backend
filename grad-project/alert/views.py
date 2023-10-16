@@ -122,7 +122,7 @@ class AlertViewSet(ModelViewSet):
         try:
             alert_id = request.data['alert_id']
         except KeyError:
-            return JsonResponse({"error": "rule_id를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
+            return JsonResponse({"error": "alert_id를 입력해주세요."}, status=HTTP_400_BAD_REQUEST)
         alert = Alert.objects.get(id=alert_id)
         rule = alert.rule
         pod_name = alert.pod_name
@@ -170,7 +170,7 @@ class AlertViewSet(ModelViewSet):
             # mongodb_connections_current 값을 기준으로 Rule의 threshold보다 5 % 적은 값을 갖도록 recommended_value 설정
             recommended_value = int(mongodb_connections_current * 100 / (threshold - 5))
         
-        if rule.id == 1 or rule.id == 3:
+        elif rule.id == 3:
             crd = None
             current_path = os.getcwd()
             crd_file_path = current_path + '/crd/MongoDBCommunity.yaml'
@@ -181,6 +181,46 @@ class AlertViewSet(ModelViewSet):
                         current_value = int(float(v['members']))
             
             recommended_value = current_value + 1
+        
+        elif rule.id == 4:
+            crd = None
+            current_path = os.getcwd()
+            crd_file_path = current_path + '/crd/MongoDBCommunity.yaml'
+            with open(crd_file_path, 'r+') as f:
+                crd = yaml.load(f, Loader=yaml.FullLoader)
+                for k, v in crd.items():
+                    if isinstance(v, dict) and 'additionalMongodConfig' in v:
+                        current_value = float(v['additionalMongodConfig']['storage']['wiredTiger']['engineConfig']['cacheSizeGB'])
+            
+            http = httplib2.Http()
+            prometheus_ip = os.environ.get("PROMETHEUS_IP", 'http://127.0.0.1')
+            url = prometheus_ip + ":9090/api/v1/query?query=" + "mongodb_wiredTiger_cache_bytes_currently_in_the_cache"
+            response, response_body = http.request(url, method="GET", 
+                                            headers={'Content-Type': 'application/json;'})
+            response_str = response_body.decode('utf-8')
+            response_dict = None
+            error = None
+            try:
+                response_dict = json.loads(response_str)
+            except ValueError:
+                return JsonResponse({"error": "Advice 생성 중 오류가 발생했습니다.[0]"}, status=HTTP_400_BAD_REQUEST)
+            except TypeError:
+                return JsonResponse({"error": "Advice 생성 중 오류가 발생했습니다.[1]"}, status=HTTP_400_BAD_REQUEST)
+            if error is None and response_dict['status'] == 'success' and response_dict['data']['result']:
+                result_list = response_dict['data']['result']
+                pod_found = False
+                for result in result_list:
+                    if result['metric']['pod'] == pod_name:
+                        pod_found = True
+                        mongodb_wiredTiger_cache_bytes_currently_in_the_cache = int(float(result['value'][1]))
+                if not pod_found:
+                    return JsonResponse({"error": "Advice 생성 중 오류가 발생했습니다.[2]"}, status=HTTP_400_BAD_REQUEST)
+            
+            # mongodb_wiredTiger_cache_bytes_currently_in_the_cache 값을 기준으로 Rule의 threshold보다 0.2 % 적은 값을 갖도록 recommended_value 설정
+            recommended_value = int(mongodb_wiredTiger_cache_bytes_currently_in_the_cache * 100 / (threshold - 0.2)) / 10 ** 9
+        
+        else:
+            return JsonResponse({"error": "존재하지 않는 Rule입니다. Alert의 Rule을 확인해주세요."}, status=HTTP_400_BAD_REQUEST)
         
         response_dict = {}
         response_dict['relevant_key_name'] = relevant_key_name
@@ -213,7 +253,7 @@ class AlertViewSet(ModelViewSet):
             with open(crd_file_path, 'w+') as f:
                 yaml.dump(crd, f, default_flow_style=False)
         
-        elif rule.id == 1 or rule.id == 3:
+        elif rule.id == 3:
             with open(crd_file_path, 'r+') as f:
                 crd = yaml.load(f, Loader=yaml.FullLoader)
                 for k, v in crd.items():
@@ -221,6 +261,18 @@ class AlertViewSet(ModelViewSet):
                         v['members'] = value
             with open(crd_file_path, 'w+') as f:
                 yaml.dump(crd, f, default_flow_style=False)
+        
+        elif rule.id == 4:
+            with open(crd_file_path, 'r+') as f:
+                crd = yaml.load(f, Loader=yaml.FullLoader)
+                for k, v in crd.items():
+                    if isinstance(v, dict) and 'additionalMongodConfig' in v:
+                        v['additionalMongodConfig']['storage']['wiredTiger']['engineConfig']['cacheSizeGB'] = value
+            with open(crd_file_path, 'w+') as f:
+                yaml.dump(crd, f, default_flow_style=False)
+        
+        else:
+            return JsonResponse({"error": "존재하지 않는 Rule입니다. Alert의 Rule을 확인해주세요."}, status=HTTP_400_BAD_REQUEST)
         
         os.system("kubectl apply -f crd/MongoDBCommunity.yaml")
         
@@ -233,6 +285,7 @@ class RuleViewSet(ModelViewSet):
     serializer_classes = {
         'list': RuleSerializer,
         'read': RuleSerializer,
+        'monitor': RuleSerializer,
     }
 
     def get_serializer_class(self):
@@ -253,3 +306,42 @@ class RuleViewSet(ModelViewSet):
                 serializer_class = Serializer
             return serializer_class
         return super().get_serializer_class()
+    
+    @action(methods=['post'], detail=False)
+    def monitor(self, request):
+        rule_id = int(request.GET.get('rule_id', 0))
+        http = httplib2.Http()
+        try:
+            rule = Rule.objects.get(id=rule_id)
+        except ObjectDoesNotExist:
+            return JsonResponse({"error": "오류가 발생했습니다.[4]"}, status=HTTP_400_BAD_REQUEST)
+        query = rule.query.replace("+", "%2B") if rule is not None else ''
+
+        prometheus_ip = os.environ.get("PROMETHEUS_IP", 'http://127.0.0.1')
+        url = prometheus_ip + ":9090/api/v1/query?query=" + query
+        response, response_body = http.request(url, method="GET", 
+                                         headers={'Content-Type': 'application/json;'})
+        response_str = response_body.decode('utf-8')
+        response_dict = None
+        error = None
+        try:
+            response_dict = json.loads(response_str)
+        except ValueError:
+            return JsonResponse({"error": "오류가 발생했습니다.[0]"}, status=HTTP_400_BAD_REQUEST)
+        except TypeError:
+            return JsonResponse({"error": "오류가 발생했습니다.[1]"}, status=HTTP_400_BAD_REQUEST)
+        if error is None and response_dict['status'] == 'success' and response_dict['data']['result']:
+            pod_value_list = []
+            result_list = response_dict['data']['result']
+            for result in result_list:
+                try:
+                    pod_name = result['metric']['pod']
+                    origin = result['metric']['instance']
+                    value = result['value'][1]
+                except KeyError:
+                    return JsonResponse({"error": "오류가 발생했습니다.[2]"}, status=HTTP_400_BAD_REQUEST)
+                pod_value = {"pod_name": pod_name, "origin": origin, "value": value}
+                pod_value_list.append(pod_value)
+            return Response(pod_value_list)
+        else:
+            return JsonResponse({"error": "오류가 발생했습니다.[3]"}, status=HTTP_400_BAD_REQUEST)

@@ -8,14 +8,6 @@ spec:
   groups:
     - name: mongodb
       rules:
-        - alert: MongodbDown
-          expr: mongodb_up == 0
-          for: 0m
-          labels:
-            severity: critical
-          annotations:
-            summary: MongoDB Down (instance {{ $labels.instance }})
-            description: "MongoDB instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
         - alert: MongodbTooManyConnections
           expr: (mongodb_connections_current / mongodb_connections_available) * 100 >= 80
           for: 0m
