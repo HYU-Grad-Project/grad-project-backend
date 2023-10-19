@@ -216,8 +216,8 @@ class AlertViewSet(ModelViewSet):
                 if not pod_found:
                     return JsonResponse({"error": "Advice 생성 중 오류가 발생했습니다.[2]"}, status=HTTP_400_BAD_REQUEST)
             
-            # mongodb_wiredTiger_cache_bytes_currently_in_the_cache 값을 기준으로 Rule의 threshold보다 0.2 % 적은 값을 갖도록 recommended_value 설정
-            recommended_value = int(mongodb_wiredTiger_cache_bytes_currently_in_the_cache * 100 / (threshold - 0.2)) / 10 ** 9
+            # mongodb_wiredTiger_cache_bytes_currently_in_the_cache 값을 기준으로 Rule의 threshold보다 0.1 % 적은 값을 갖도록 recommended_value 설정
+            recommended_value = int(mongodb_wiredTiger_cache_bytes_currently_in_the_cache * 100 / (threshold - 0.1)) / 10 ** 9
         
         else:
             return JsonResponse({"error": "존재하지 않는 Rule입니다. Alert의 Rule을 확인해주세요."}, status=HTTP_400_BAD_REQUEST)
