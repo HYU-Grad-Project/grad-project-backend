@@ -38,7 +38,7 @@ def resolve_alerts():
             for result in result_list:
                 if result['metric']['pod'] == pod_name:
                     pod_found = True
-                    query_result = int(float(result['value'][1]))
+                    query_result = float(result['value'][1])
             if not pod_found:
                 return JsonResponse({"error": "Alert Read 오류가 발생했습니다.[2]"}, status=HTTP_400_BAD_REQUEST)
         
